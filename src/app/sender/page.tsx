@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ethers, BrowserProvider, Signer } from "ethers";
+import { useState } from "react";
+import { ethers, Signer } from "ethers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,12 @@ import {
 const USDT_CONTRACT_ADDRESS = "0xdac17f958d2ee523a2206206994597c13d831ec7";
 const USDT_ABI = ["function transfer(address to, uint amount)"];
 
+interface CustomWindow extends Window {
+  ethereum?: import('ethers').Eip1193Provider;
+}
+
+declare let window: CustomWindow;
+
 export default function Sender() {
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
@@ -25,9 +31,8 @@ export default function Sender() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [txHash, setTxHash] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] =useState(false);
 
-  const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [signer, setSigner] = useState<Signer | null>(null);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
@@ -35,12 +40,11 @@ export default function Sender() {
     setError("");
     if (typeof window.ethereum !== "undefined") {
       try {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
         const browserProvider = new ethers.BrowserProvider(window.ethereum);
+        await browserProvider.send("eth_requestAccounts", []);
         const walletSigner = await browserProvider.getSigner();
         const address = await walletSigner.getAddress();
 
-        setProvider(browserProvider);
         setSigner(walletSigner);
         setWalletAddress(address);
       } catch (err) {
@@ -209,11 +213,4 @@ export default function Sender() {
       </div>
     </div>
   );
-}
-
-// Add window.ethereum type definition for TypeScript
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
 }
